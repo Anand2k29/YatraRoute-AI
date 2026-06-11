@@ -87,10 +87,10 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, isLoading }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-4 font-display text-white text-xl uppercase tracking-wider border-4 border-black transition-all transform hover:-translate-y-1 hover:rotate-1 hover:shadow-sketch active:translate-y-0 active:rotate-0 active:shadow-none rounded-tl-2xl rounded-br-2xl rounded-tr-md rounded-bl-md ${
+              className={`w-full py-4 font-display text-white text-xl uppercase tracking-wider border-4 border-black transition-all transform hover:-translate-y-1 hover:rotate-1 hover:shadow-sketch active:translate-y-0 active:rotate-0 active:shadow-none rounded-[10px_35px_5px_40px] ${
                 isLoading 
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-jugaad-primary'
+                  : 'bg-[#FF5722]'
               }`}
             >
               {isLoading ? 'Invention in Progress...' : 'ACTIVATE JUGAAD-INATOR! ⚙️'}

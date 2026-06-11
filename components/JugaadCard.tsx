@@ -144,7 +144,7 @@ const JugaadCard: React.FC<JugaadCardProps> = ({ route }) => {
       {/* Action Button */}
       <button 
          onClick={() => setShowFares(!showFares)}
-         className="w-full bg-jugaad-primary text-white font-display text-lg py-3 px-4 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:rotate-1 hover:shadow-none transition-all flex flex-col items-center justify-center gap-0.5 active:translate-y-1 active:shadow-none rounded-tl-2xl rounded-br-2xl rounded-tr-md rounded-bl-md"
+         className="w-full bg-[#FF5722] text-white font-display text-lg py-3 px-4 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:rotate-1 hover:shadow-none transition-all flex flex-col items-center justify-center gap-0.5 active:translate-y-1 active:shadow-none rounded-[8px_25px_6px_30px]"
       >
          <div className="flex items-center gap-2">
             <span>🔨</span> 
