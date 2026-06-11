@@ -87,4 +87,5 @@ export interface SearchParams {
 
 export interface SearchResponse {
   routes: RankedRoute[];
+  logs?: AnalysisLogEntry[];
 }

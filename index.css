@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Carter+One&family=Comic+Neue:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-jugaad-bg: #0077BE;
+  --color-jugaad-card: #FFFDD0;
+  --color-jugaad-primary: #FF5722;
+  --color-jugaad-accent: #00BCD4;
+  --color-jugaad-text: #212121;
+  --color-jugaad-muted: #5D4037;
+  --color-jugaad-danger: #D32F2F;
+  --color-jugaad-border: #000000;
+
+  --font-sans: 'Comic Neue', 'Chalkboard SE', sans-serif;
+  --font-display: 'Carter One', cursive;
+
+  --shadow-sketch: 4px 4px 0px 0px rgba(0,0,0,1);
+}
+
+body {
+  font-family: 'Comic Neue', sans-serif;
+  background-color: #0077BE;
+  color: #212121;
+  /* Blueprint Grid Pattern */
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'Carter One', cursive;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(-0.5deg); }
+  50% { transform: translateY(-8px) rotate(0.5deg); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes growWidth {
+  from { width: 0%; }
+  to { width: var(--target-width, 100%); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
+}
+
+.animate-grow-width {
+  animation: growWidth 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+

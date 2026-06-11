@@ -1,149 +1,162 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { SearchResponse } from "../types";
+import { SearchResponse, RankedRoute } from "../types";
+import { runGraphEngine } from "./graphEngine";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
+const hasApiKey = apiKey && apiKey.trim() !== "" && apiKey !== "your_gemini_api_key_here" && !apiKey.startsWith("your_");
 
-const legSchema: Schema = {
+const ai = hasApiKey ? new GoogleGenAI({ apiKey }) : null;
+
+// Lightweight schema for LLM enrichment of text fields
+const enrichmentSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    trainName: { type: Type.STRING },
-    trainNumber: { type: Type.STRING },
-    sourceStation: { type: Type.STRING },
-    destinationStation: { type: Type.STRING },
-    departureTime: { type: Type.STRING },
-    arrivalTime: { type: Type.STRING },
-    duration: { type: Type.STRING },
-    status: { type: Type.STRING, enum: ["AVAILABLE", "RAC", "WAITLIST", "REGRET"] },
-    ticketClass: { type: Type.STRING },
-    date: { type: Type.STRING },
-    probability: { type: Type.NUMBER, description: "Confirmation probability percentage if WL" },
+    routes: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          reason: { type: Type.STRING, description: "A Phineas & Ferb style funny agent description of why this route was invented." },
+          layoverTip: { type: Type.STRING, description: "An inventive tips/recommendations block for layovers/pit stops (e.g. food/inventions)." },
+          secretTip: { type: Type.STRING, description: "A top secret money saving or hackathon booking tip for the traveler." }
+        },
+        required: ["id", "reason"]
+      }
+    }
   },
-  required: ["trainName", "trainNumber", "sourceStation", "destinationStation", "departureTime", "arrivalTime", "status", "ticketClass", "date"],
+  required: ["routes"]
 };
 
-const priceSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    platformName: { type: Type.STRING },
-    finalPrice: { type: Type.NUMBER },
-    breakdown: { type: Type.STRING },
-    isCheapest: { type: Type.BOOLEAN },
-    verdict: { type: Type.STRING, description: "Short verdict like 'Steal' or 'Pricey'" },
-  },
-  required: ["platformName", "finalPrice", "breakdown", "isCheapest"],
-};
-
-const fareSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    baseFare: { type: Type.NUMBER },
-    prices: { type: Type.ARRAY, items: priceSchema },
-    bestDealLabel: { type: Type.STRING },
-    secretTip: { type: Type.STRING, description: "A money saving tip for this route" },
-  },
-  required: ["baseFare", "prices", "bestDealLabel"],
-};
-
-const badgeSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    label: { type: Type.STRING },
-    type: { type: Type.STRING, enum: ["SAFE", "MODERATE", "RISKY", "CHEAP"] },
-  },
-  required: ["label", "type"],
-};
-
-const rankedRouteSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    id: { type: Type.STRING },
-    rank: { type: Type.INTEGER },
-    title: { type: Type.STRING },
-    type: { type: Type.STRING, enum: ["split", "direct"] },
-    summary: { type: Type.STRING },
-    totalDuration: { type: Type.STRING },
-    stations: { type: Type.ARRAY, items: { type: Type.STRING } },
-    midDuration: { type: Type.STRING },
-    layoverTip: { type: Type.STRING, description: "Specific food/activity tip for the junction station e.g., 'Grab hot samosas & chai at Platform 1'" },
-    legs: { type: Type.ARRAY, items: legSchema },
-    badges: { type: Type.ARRAY, items: badgeSchema },
-    reason: { type: Type.STRING },
-    fareAnalysis: fareSchema,
-  },
-  required: ["id", "rank", "title", "type", "summary", "totalDuration", "stations", "legs", "badges", "reason", "fareAnalysis"],
-};
-
-const responseSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    routes: { type: Type.ARRAY, items: rankedRouteSchema },
-  },
-  required: ["routes"],
+// Fallback text generator for Phineas & Ferb style local responses
+const getLocalEnrichment = (route: RankedRoute): { reason: string, layoverTip?: string, secretTip?: string } => {
+  const isSeatSplit = route.id.startsWith("seat-split");
+  const isStationSplit = route.id.startsWith("station-split");
+  const isDirectWl = route.id.startsWith("direct-wl");
+  
+  if (isSeatSplit) {
+    return {
+      reason: "Ah, the Single-Train Seat Switcher! The Jugaad-inator detected that while no single seat was free for the whole trip, you can swap seats at " + route.stations[1] + ". Perry approved!",
+      layoverTip: "Change from Coach " + route.legs[0].status.match(/Seat (.*)\)/)?.[1] + " to Coach " + route.legs[1].status.match(/Seat (.*)\)/)?.[1] + " at " + route.stations[1] + ". Quick swap, zero platform jumping!",
+      secretTip: "Book both legs in one transaction on RedRail to maximize student cashback!"
+    };
+  } else if (isStationSplit) {
+    const junc = route.stations[1];
+    return {
+      reason: "Behold, the Safe-inator! We split your journey at " + junc + " Junction. By utilizing two connecting trains, you get 100% confirmed berths. Curated under Major Monogram's guidelines.",
+      layoverTip: "Platform " + route.legs[0].status + " ➔ Platform " + route.legs[1].status + ". Pit stop time! Grab hot samosas & chai at " + junc + " Platform 1. Keep an eye out for Agent P!",
+      secretTip: "Check the platform layouts in advance to avoid running through the overbridge with heavy backpacks."
+    };
+  } else if (isDirectWl) {
+    return {
+      reason: "The Direct-inator. A simple, linear prototype, but Dr. Doofenshmirtz waitlisted the entire coach. Busted! Only use if you've got a jetpack ready.",
+      layoverTip: "No pit stop. Just watch out for waitlist cancellations.",
+      secretTip: "Waitlist tickets auto-cancel if not confirmed. Set a `/schedule` reminder to check status!"
+    };
+  }
+  
+  return {
+    reason: "A standard invention. Perfect for a quick summer project.",
+    layoverTip: route.layoverTip,
+    secretTip: "Keep it simple, Ferb!"
+  };
 };
 
 export const findRoutes = async (source: string, destination: string, date: string): Promise<SearchResponse> => {
-  const model = "gemini-2.5-flash";
+  // 1. Run deterministic graph routing calculations first
+  const { routes, logs } = runGraphEngine(source, destination, date);
 
-  const prompt = `
-    You are **Jugaad-inator**, the backend for a "Phineas & Ferb" style student travel app.
-    User Input: Source: ${source}, Destination: ${destination}, Travel Date: ${date}.
-
-    **BRANDING ("The Summer Invention"):**
-    Cartoonish, Energetic, Inventive.
-    Routes are "Blueprints" or "Big Ideas". 
-    Layovers are "Pit Stops" or "Tinkering Breaks".
-    Confirmed Status is "Perry Approved" or "104% Likely". 
-    Waitlist is "Busted" or "Risky Prototype".
-    Use "-inator" suffixes creatively for titles.
-
-    **MODULE 1: THE RANKING ENGINE (The Big Ideas)**
-    Generate 3-4 distinct route blueprints and rank them:
-    
-    1.  **RANK 1 (The Big Idea):** Best Split Route (A->B->C).
-        *   Criteria: >2hr Buffer, Confirmed Seats.
-        *   Title: "The Safe-inator (Via [Junction])".
-        *   Badge: SAFE.
-    2.  **RANK 2 (Standard Prototype):** Direct Train.
-        *   Simulate as **Waitlisted (WL)**.
-        *   Title: "The Direct-inator".
-        *   Badge: RISKY.
-    3.  **RANK 3 (Crazy Concept):** Tighter buffer (<2h) or Expensive.
-        *   Title: "The Speed-inator 3000".
-        *   Badge: MODERATE.
-
-    **MODULE 2: THE FARE CALCULATOR**
-    Estimate Base Fare (₹X) and calculate:
-    *   **RedRail:** ₹X + 20 - 50 -> "Best Deal"
-    *   **IRCTC:** ₹X + 18
-    *   **MakeMyTrip:** ₹X + 60
-
-    **MODULE 3: DATA PREP**
-    *   Populate \`layoverTip\` with a specific **food recommendation** for the pit stop (e.g., "Grab hot samosas & chai at Platform 1").
-    *   \`midDuration\` is the Pit Stop time.
-    *   **CRITICAL:** Ensure the first leg starts exactly on **${date}**. Format dates as "Day, DD Mon".
-
-    Output strict JSON.
-  `;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: responseSchema,
-        systemInstruction: "You are the Jugaad-inator. You create brilliant route inventions.",
-        temperature: 0.3, 
-      },
-    });
-
-    const jsonText = response.text;
-    if (!jsonText) throw new Error("The -inator failed to fire!");
-    
-    return JSON.parse(jsonText) as SearchResponse;
-
-  } catch (error) {
-    console.error("Jugaad Engine Error:", error);
-    throw new Error("Dr. Doofenshmirtz interfered. Try again!");
+  if (routes.length === 0) {
+    return {
+      routes: [],
+      logs: [
+        ...logs,
+        {
+          optionLabel: "ERROR",
+          status: 'REJECTED',
+          reason: "Dr. Doofenshmirtz blocked all paths. No connections found.",
+          riskLevel: 'RED'
+        }
+      ]
+    };
   }
+
+  // 2. Enrich text fields using Gemini if API key is available
+  if (ai) {
+    try {
+      const model = "gemini-2.5-flash";
+      const prompt = `
+        You are **Jugaad-inator**, the backend for a "Phineas & Ferb" style student travel app.
+        We have computed these route options for travel from ${source} to ${destination} on ${date}:
+        
+        ${JSON.stringify(routes.map(r => ({ id: r.id, title: r.title, summary: r.summary, type: r.type, stations: r.stations })))}
+
+        For each route ID, generate:
+        1. An inventive Phineas & Ferb style explanation for "reason" (e.g., mention Perry, Doofenshmirtz, Agent P, 104 days of summer, the Inator).
+        2. A fun "layoverTip" recommending local snacks or activities at the transition/junction station (especially if it is a split route).
+        3. A "secretTip" for saving money or booking hacks.
+
+        Return strict JSON matching the schema.
+      `;
+
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: enrichmentSchema,
+          systemInstruction: "You are the Jugaad-inator. Inject witty Phineas & Ferb cartoon humor and references into the travel explanations.",
+          temperature: 0.7,
+        },
+      });
+
+      const jsonText = response.text;
+      if (jsonText) {
+        const enrichment = JSON.parse(jsonText) as { routes: { id: string, reason: string, layoverTip?: string, secretTip?: string }[] };
+        
+        // Merge enriched fields back
+        const enrichedRoutes = routes.map(route => {
+          const enrichData = enrichment.routes.find(r => r.id === route.id);
+          if (enrichData) {
+            return {
+              ...route,
+              reason: enrichData.reason || route.reason,
+              layoverTip: enrichData.layoverTip || route.layoverTip,
+              fareAnalysis: {
+                ...route.fareAnalysis,
+                secretTip: enrichData.secretTip || route.fareAnalysis.secretTip
+              }
+            };
+          }
+          return route;
+        });
+
+        return {
+          routes: enrichedRoutes,
+          logs: logs
+        };
+      }
+    } catch (err) {
+      console.error("Gemini enrichment failed, falling back to local text generators:", err);
+    }
+  }
+
+  // 3. Fallback: Use high-quality local text enrichment
+  const enrichedRoutes = routes.map(route => {
+    const local = getLocalEnrichment(route);
+    return {
+      ...route,
+      reason: local.reason,
+      layoverTip: local.layoverTip || route.layoverTip,
+      fareAnalysis: {
+        ...route.fareAnalysis,
+        secretTip: local.secretTip || route.fareAnalysis.secretTip
+      }
+    };
+  });
+
+  return {
+    routes: enrichedRoutes,
+    logs: logs
+  };
 };
