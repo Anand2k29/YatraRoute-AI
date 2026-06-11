@@ -473,6 +473,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
 
       </main>
 
+      {/* Team Footer Section */}
+      <footer className="max-w-7xl mx-auto px-4 md:px-8 mt-16 pt-8 pb-12 border-t-2 border-black border-dashed flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="flex items-center gap-3 bg-white border-2 border-black p-3.5 rounded-lg shadow-sketch transform -rotate-1">
+          <span className="text-3xl">🛠️</span>
+          <div className="text-left text-black">
+            <h4 className="font-display text-sm uppercase leading-none">A2N Team</h4>
+            <p className="text-[10px] text-gray-500 font-comic font-bold mt-1">Anand Minejes & Jyotasana</p>
+          </div>
+        </div>
+        
+        <div className="text-center md:text-right">
+          <p className="font-display text-xs text-white drop-shadow-sm uppercase">YATRAROUTE AI</p>
+          <p className="text-[10px] font-bold text-yellow-200 font-comic mt-0.5">Ferb, I know what we're gonna do today! © 2026</p>
+        </div>
+      </footer>
+
     </div>
   );
 };

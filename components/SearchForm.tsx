@@ -4,9 +4,10 @@ import { SearchParams } from '../types';
 interface SearchFormProps {
   onSearch: (params: SearchParams) => void;
   isLoading: boolean;
+  compact?: boolean;
 }
 
-// Mock data for "Previous Inventions"
+// Mock data for \"Previous Inventions\"
 const previousInventions = [
   { from: 'PUNE', to: 'GOA', code: 'MAO' },
   { from: 'NDLS', to: 'KULLU', code: 'JAT' },
@@ -14,7 +15,7 @@ const previousInventions = [
   { from: 'SBC', to: 'MYS', code: 'MYS' },
 ];
 
-const SearchForm: React.FC<SearchFormProps> = ({ onSearch, isLoading }) => {
+const SearchForm: React.FC<SearchFormProps> = ({ onSearch, isLoading, compact = false }) => {
   const [source, setSource] = useState('');
   const [destination, setDestination] = useState('');
   const [date, setDate] = useState('');
@@ -31,6 +32,64 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch, isLoading }) => {
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   const minDate = `${year}-${month}-${day}`;
+
+  if (compact) {
+    return (
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="relative group">
+            <label className="block text-[10px] font-extrabold mb-1 ml-1 uppercase text-black">📍 Origin Dial</label>
+            <input
+              type="text"
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              placeholder="e.g. NDLS"
+              className="w-full bg-white text-black p-2 text-xs border-2 border-black rounded focus:ring-2 focus:ring-jugaad-accent/30 outline-none font-bold placeholder-gray-400 border-dashed"
+              required
+            />
+          </div>
+          
+          <div className="relative group">
+            <label className="block text-[10px] font-extrabold mb-1 ml-1 uppercase text-black">📍 Dest Dial</label>
+            <input
+              type="text"
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
+              placeholder="e.g. CSTM"
+              className="w-full bg-white text-black p-2 text-xs border-2 border-black rounded focus:ring-2 focus:ring-jugaad-accent/30 outline-none font-bold placeholder-gray-400 border-dashed"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="relative group">
+          <label className="block text-[10px] font-extrabold mb-1 ml-1 uppercase text-black">📅 Date Gadget</label>
+          <input
+            type="date"
+            value={date}
+            min={minDate}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full bg-white text-black p-2 text-xs border-2 border-black rounded focus:ring-2 focus:ring-jugaad-accent/30 outline-none font-bold"
+            required
+          />
+        </div>
+
+        <div className="pt-1">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`w-full py-2.5 font-display text-white text-sm uppercase tracking-wider border-2 border-black transition-all transform hover:-translate-y-0.5 active:translate-y-0 rounded shadow-[2px_2px_0px_rgba(0,0,0,1)] active:shadow-none ${
+              isLoading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-[#FF5722] hover:bg-orange-600'
+            }`}
+          >
+            {isLoading ? 'Invention in Progress...' : 'ACTIVATE JUGAAD-INATOR! ⚙️'}
+          </button>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <div>

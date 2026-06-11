@@ -36,6 +36,16 @@ const JugaadCard: React.FC<JugaadCardProps> = ({ route }) => {
 
   const isSeatSplit = route.id.startsWith("seat-split");
 
+  const handleExportBlueprint = () => {
+      const shareMessage = `Hey Ferb, I know what we're gonna do today! I found a waitlist-bypassing ticket blueprint using YatraRoute AI.
+Route: ${route.legs[0].sourceStation} ➔ ${route.legs[route.legs.length-1].destinationStation}
+Train details: ${route.legs[0].trainName} (${route.legs[0].trainNumber})
+Check it out on YatraRoute AI!`;
+      
+      navigator.clipboard.writeText(shareMessage);
+      alert("📐 Blueprint successfully exported to clipboard! Send it to Ferb or your co-traveler!");
+  };
+
   return (
     <div className="relative bg-jugaad-card border-2 border-black rounded-lg p-5 mb-6 shadow-sketch transition-transform hover:-translate-y-0.5">
       {/* Tape Effect */}
@@ -169,87 +179,78 @@ const JugaadCard: React.FC<JugaadCardProps> = ({ route }) => {
          <span>ACTIVATE TATKAL ALARM-INATOR</span>
       </button>
 
-      {/* Action Button */}
+      {/* Export Blueprint Button */}
       <button 
-         onClick={() => setShowFares(!showFares)}
-         className="w-full bg-[#FF5722] text-white font-display text-lg py-3 px-4 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 hover:rotate-1 hover:shadow-none transition-all flex flex-col items-center justify-center gap-0.5 active:translate-y-1 active:shadow-none rounded-[8px_25px_6px_30px]"
+         onClick={handleExportBlueprint}
+         className="w-full bg-yellow-100 text-black font-display text-xs py-2 px-4 border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2 mb-3 active:translate-y-1 active:shadow-none rounded"
       >
-         <div className="flex items-center gap-2">
-            <span>🔨</span> 
-            <span>{showFares ? 'FOLD BLUEPRINT' : 'CLICK TO COMPARE FARES'}</span>
-         </div>
-         {!showFares && savings > 0 && (
-            <span className="text-[10px] font-sans font-bold text-yellow-100 tracking-wide">
-                (Click to view prices & save ₹{savings})
-            </span>
-         )}
+         <span>📐</span> 
+         <span>EXPORT BLUEPRINT & SHARE</span>
       </button>
 
-      {/* Fares Panel */}
-      {showFares && (
-          <div className="mt-4 bg-white border-2 border-black rounded p-4 animate-fade-in">
-              <div className="flex justify-between items-center mb-3 border-b-2 border-black pb-1">
-                  <h4 className="font-display text-xs uppercase text-black">Ticket Price Comparison:</h4>
-                  {route.fareAnalysis.bestDealLabel && (
-                      <span className="bg-green-600 text-white text-[9px] font-mono px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_rgba(0,0,0,1)] uppercase font-bold animate-pulse">
-                        Deal: {route.fareAnalysis.bestDealLabel}
-                      </span>
-                  )}
-              </div>
-              
-              <div className="mb-2">
-                  {(() => {
-                      const maxPrice = Math.max(...route.fareAnalysis.prices.map(p => p.finalPrice));
-                      return route.fareAnalysis.prices.map((price, idx) => {
-                          const widthPercent = (price.finalPrice / maxPrice) * 100;
-                          return (
-                              <div key={idx} className={`p-3.5 rounded border-2 border-black mb-3 shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all ${price.isCheapest ? 'bg-green-50' : 'bg-gray-50'}`}>
-                                  <div className="flex justify-between items-center mb-1.5">
-                                      <div className="flex items-center gap-1.5">
-                                          {price.isCheapest && <span className="text-base animate-bounce inline-block">💰</span>}
-                                          <div>
-                                              <span className="font-display text-xs text-black block leading-none">{price.platformName}</span>
-                                              <span className="text-[9px] text-jugaad-muted font-bold font-mono block mt-1">{price.breakdown}</span>
-                                          </div>
-                                      </div>
-                                      <div className="text-right">
-                                          <span className="font-mono text-xs font-extrabold block">₹{price.finalPrice}</span>
-                                          {price.verdict && (
-                                              <span className={`text-[8px] font-extrabold px-1 py-0.5 rounded border border-black uppercase tracking-wider ${price.isCheapest ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                                                  {price.verdict}
-                                              </span>
-                                          )}
-                                      </div>
-                                  </div>
-                                  
-                                  {/* Animated Price Bar */}
-                                  <div className="w-full h-3.5 bg-white border-2 border-black rounded-full overflow-hidden relative shadow-inner">
-                                      <div 
-                                          className={`h-full border-r-2 border-black animate-grow-width rounded-full ${price.isCheapest ? 'bg-green-400' : price.finalPrice === maxPrice ? 'bg-red-400' : 'bg-yellow-400'}`}
-                                          style={{ 
-                                              '--target-width': `${widthPercent}%`,
-                                              width: `${widthPercent}%` 
-                                          } as React.CSSProperties}
-                                      ></div>
-                                  </div>
-                              </div>
-                          );
-                      });
-                  })()}
-              </div>
-              
-              {/* Secret Tip */}
-              {route.fareAnalysis.secretTip && (
-                  <div className="mt-3 bg-blue-50 border border-blue-200 rounded p-2.5 flex items-start gap-2 text-[10px] font-comic">
-                     <span className="text-sm">🤫</span>
-                     <div>
-                        <span className="font-bold text-blue-900 block uppercase text-[9px] tracking-wide">Jugaad Secret:</span>
-                        <span className="text-blue-800 leading-normal">{route.fareAnalysis.secretTip}</span>
-                     </div>
-                  </div>
+      {/* Fares Panel (Visible by default) */}
+      <div className="mt-4 bg-white border-2 border-black rounded p-4 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+          <div className="flex justify-between items-center mb-3 border-b-2 border-black pb-1">
+              <h4 className="font-display text-xs uppercase text-black">Ticket Price Comparison:</h4>
+              {route.fareAnalysis.bestDealLabel && (
+                  <span className="bg-green-600 text-white text-[9px] font-mono px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_rgba(0,0,0,1)] uppercase font-bold animate-pulse">
+                    Deal: {route.fareAnalysis.bestDealLabel}
+                  </span>
               )}
           </div>
-      )}
+          
+          <div className="mb-2">
+              {(() => {
+                  const maxPrice = Math.max(...route.fareAnalysis.prices.map(p => p.finalPrice));
+                  return route.fareAnalysis.prices.map((price, idx) => {
+                      const widthPercent = (price.finalPrice / maxPrice) * 100;
+                      return (
+                          <div key={idx} className={`p-3.5 rounded border-2 border-black mb-3 shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all ${price.isCheapest ? 'bg-green-50' : 'bg-gray-50'}`}>
+                              <div className="flex justify-between items-center mb-1.5">
+                                  <div className="flex items-center gap-1.5">
+                                      {price.isCheapest && <span className="text-base animate-bounce inline-block">💰</span>}
+                                      <div>
+                                          <span className="font-display text-xs text-black block leading-none">{price.platformName}</span>
+                                          <span className="text-[9px] text-jugaad-muted font-bold font-mono block mt-1">{price.breakdown}</span>
+                                      </div>
+                                  </div>
+                                  <div className="text-right">
+                                      <span className="font-mono text-xs font-extrabold block">₹{price.finalPrice}</span>
+                                      {price.verdict && (
+                                          <span className={`text-[8px] font-extrabold px-1 py-0.5 rounded border border-black uppercase tracking-wider ${price.isCheapest ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                                              {price.verdict}
+                                          </span>
+                                      )}
+                                  </div>
+                              </div>
+                              
+                              {/* Animated Price Bar */}
+                              <div className="w-full h-3.5 bg-white border-2 border-black rounded-full overflow-hidden relative shadow-inner">
+                                  <div 
+                                      className={`h-full border-r-2 border-black animate-grow-width rounded-full ${price.isCheapest ? 'bg-green-400' : price.finalPrice === maxPrice ? 'bg-red-400' : 'bg-yellow-400'}`}
+                                      style={{ 
+                                          '--target-width': `${widthPercent}%`,
+                                          width: `${widthPercent}%` 
+                                      } as React.CSSProperties}
+                                  ></div>
+                              </div>
+                          </div>
+                      );
+                  });
+              })()}
+          </div>
+          
+          {/* Secret Tip */}
+          {route.fareAnalysis.secretTip && (
+              <div className="mt-3 bg-blue-50 border border-blue-200 rounded p-2.5 flex items-start gap-2 text-[10px] font-comic">
+                 <span className="text-sm">🤫</span>
+                 <div>
+                    <span className="font-bold text-blue-900 block uppercase text-[9px] tracking-wide">Jugaad Secret:</span>
+                    <span className="text-blue-800 leading-normal">{route.fareAnalysis.secretTip}</span>
+                 </div>
+              </div>
+          )}
+      </div>
 
       {showAlarmModal && (
           <TatkalAlarmModal route={route} onClose={() => setShowAlarmModal(false)} />

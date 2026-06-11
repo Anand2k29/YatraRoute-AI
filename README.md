@@ -5,6 +5,10 @@
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind--CSS-v4.0-38bdf8?logo=tailwind-css)](https://tailwindcss.com)
 [![Gemini Pro AI](https://img.shields.io/badge/Gemini--Pro-AI--Enriched-blue?logo=google-gemini)](https://ai.studio)
 
+### 🛠️ Team: A2N
+*   **Anand Minejes**
+*   **Jyotasana**
+
 ---
 
 ## 1. Problem Statement (PS)
@@ -71,3 +75,9 @@ Start the local development server:
 npm run dev
 ```
 Open your browser and navigate to **http://localhost:3000**.
+
+---
+
+## 7. Development Team (A2N)
+*   **Anand Minejes**
+*   **Jyotasana**

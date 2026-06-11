@@ -41,7 +41,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ logs }) => {
                )}
             </div>
 
-            <div className="flex-1 text-black font-semibold">
+            <div className="flex-1 text-black font-semibold break-words whitespace-normal">
               {log.reason}
             </div>
             
